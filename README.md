@@ -1,1 +1,1 @@
-Blazingly fast neovim config for C# development
+# Blazingly fast neovim config for C# development
