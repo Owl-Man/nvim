@@ -95,4 +95,5 @@ end)
 
 
 vim.keymap.set("n", "<leader>gs", "<cmd>Git<CR>")
+vim.keymap.set("n", "<leader>gl", "<cmd>Git log --graph --oneline --decorate --all<CR>")
 vim.keymap.set("n", "<leader>u", "<cmd>UndotreeToggle<CR>")
