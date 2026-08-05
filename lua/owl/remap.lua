@@ -104,3 +104,17 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.keymap.set("n", "p", "<cmd>Git pull<CR>", { buffer = true, desc = "Git pull" })
   end,
 })
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "fugitive", "git" },
+  callback = function()
+    vim.keymap.set("n", "cp", "<cmd>Git cherry-pick <C-R>=expand('<cfile>')<CR><CR>", {
+      buffer = true,
+      desc = "Cherry-pick commit under cursor",
+    })
+    vim.keymap.set("n", "cP", "<cmd>Git cherry-pick --no-commit <C-R>=expand('<cfile>')<CR><CR>", {
+      buffer = true,
+      desc = "Cherry-pick commit under cursor (no commit)",
+    })
+  end,
+})
