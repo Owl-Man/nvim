@@ -35,3 +35,10 @@ vim.opt.completeopt = { "menu", "menuone", "noselect" }
 vim.opt.clipboard = "unnamedplus"
 
 vim.opt.syntax = "off"
+
+vim.o.autoread = true
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold" }, {
+  callback = function()
+    vim.cmd("silent! checktime")
+  end,
+})

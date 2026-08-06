@@ -254,7 +254,6 @@ return {
     dependencies = {
       "nvim-lua/plenary.nvim",
       "nvim-treesitter/nvim-treesitter",
-      "antoinemadec/FixCursorHold.nvim",
       { "CitizenHarris/neotest-dotnet", branch = "main" },
       "nvim-neotest/nvim-nio",
     },
