@@ -44,8 +44,6 @@ return {
       vim.lsp.config("roslyn", {
         cmd_env = {
           DOTNET_gcServer = "1",
-          DOTNET_ThreadPool_ForceMinWorkerThreads = "32",
-          DOTNET_ThreadPool_ForceMaxWorkerThreads = "64",
         },
         capabilities = capabilities,
         on_attach = function(client, bufnr)

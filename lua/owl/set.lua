@@ -42,3 +42,24 @@ vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold" }, {
     vim.cmd("silent! checktime")
   end,
 })
+
+local git_status = vim.api.nvim_create_augroup("GitStatusColors", { clear = true })
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "fugitive",
+  group = git_status,
+  callback = function()
+    local colors = {
+      D = { fg = "#ff6b6b" },
+      M = { fg = "#ffd866" },
+      A = { fg = "#a9dc76" },
+      R = { fg = "#78dce8" },
+      U = { fg = "#ff9f1c" },
+    }
+    for letter, c in pairs(colors) do
+      local hl = "FugitiveStatus" .. letter
+      vim.api.nvim_set_hl(0, hl, { fg = c.fg, bold = true })
+      vim.fn.matchadd(hl, "\\v^" .. letter .. "%( |. )")
+      vim.fn.matchadd(hl, "\\v^%(.)" .. letter .. " ")
+    end
+  end,
+})
