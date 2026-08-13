@@ -28,6 +28,10 @@ return {
     config = function()
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       local ok_cmp, cmp_lsp = pcall(require, "cmp_nvim_lsp")
+
+      vim.lsp.commands["roslyn.client.peekReferences"] = function()
+        vim.lsp.buf.references({ includeDeclaration = false })
+      end
       if ok_cmp then
         capabilities = cmp_lsp.default_capabilities(capabilities)
       end
@@ -42,9 +46,6 @@ return {
       })
 
       vim.lsp.config("roslyn", {
-        cmd_env = {
-          DOTNET_gcServer = "1",
-        },
         capabilities = capabilities,
         on_attach = function(client, bufnr)
           if client.server_capabilities.documentSymbolProvider then
@@ -92,11 +93,11 @@ return {
             dotnet_compiler_diagnostics_scope = "openFiles",
           },
           ["csharp|inlay_hints"] = {
-              csharp_enable_inlay_hints_for_implicit_object_creation = true,
-              csharp_enable_inlay_hints_for_implicit_variable_types = true,
+            csharp_enable_inlay_hints_for_implicit_object_creation = true,
+            csharp_enable_inlay_hints_for_implicit_variable_types = true,
           },
           ["csharp|code_lens"] = {
-              dotnet_enable_references_code_lens = true,
+            dotnet_enable_references_code_lens = true,
           },
       },
       })
@@ -105,7 +106,8 @@ return {
   {
     "seblyng/roslyn.nvim",
     opts = {
-      filewatching = "auto",
+      filewatching = "roslyn",
+      lock_target = true,
     },
   },
   {

@@ -3,6 +3,7 @@ return {
     "nvim-lua/plenary.nvim",
     lazy = false,
   },
+
   {
     "nvim-telescope/telescope.nvim",
     dependencies = {
@@ -13,23 +14,60 @@ return {
       require("telescope").setup({})
     end,
   },
+  
   {
     "mbbill/undotree",
     cmd = {
       "UndotreeToggle",
     },
   },
+
   {
-    "chentoast/marks.nvim",
-    event = { "BufReadPre", "BufNewFile" },
-    opts = {},
+      "ThePrimeagen/harpoon",
+      branch = "harpoon2",
+      dependencies = { "nvim-lua/plenary.nvim" },
+      config = function()
+          local harpoon = require("harpoon")
+
+          harpoon:setup()
+
+          vim.keymap.set("n", "<leader>A", function()
+              harpoon:list():prepend()
+          end)
+          vim.keymap.set("n", "<leader>a", function()
+              harpoon:list():add()
+          end)
+          vim.keymap.set("n", "<C-e>", function()
+              harpoon.ui:toggle_quick_menu(harpoon:list())
+          end)
+
+          vim.keymap.set("n", "<leader>1", function()
+              harpoon:list():select(1)
+          end)
+          vim.keymap.set("n", "<leader>2", function()
+              harpoon:list():select(2)
+          end)
+          vim.keymap.set("n", "<leader>3", function()
+              harpoon:list():select(3)
+          end)
+          vim.keymap.set("n", "<leader>4", function()
+              harpoon:list():select(4)
+          end)
+      end,
   },
+
   {
     "tpope/vim-fugitive",
     cmd = {
       "Git",
       "G",
     },
+  },
+
+  {
+      "chentoast/marks.nvim",
+      event = { "BufReadPre", "BufNewFile" },
+      opts = {},
   },
 
   {
@@ -117,14 +155,71 @@ return {
     "Wansmer/symbol-usage.nvim",
     event = "LspAttach",
     config = function()
+      local function h(name)
+        return vim.api.nvim_get_hl(0, { name = name })
+      end
+
+      vim.api.nvim_set_hl(0, "SymbolUsageRounding", { fg = h("CursorLine").bg, italic = true })
+      vim.api.nvim_set_hl(0, "SymbolUsageContent", { bg = h("CursorLine").bg, fg = h("Comment").fg, italic = true })
+      vim.api.nvim_set_hl(0, "SymbolUsageRef", { fg = h("Function").fg, bg = h("CursorLine").bg, italic = true })
+      vim.api.nvim_set_hl(0, "SymbolUsageDef", { fg = h("Type").fg, bg = h("CursorLine").bg, italic = true })
+      vim.api.nvim_set_hl(0, "SymbolUsageImpl", { fg = h("@keyword").fg, bg = h("CursorLine").bg, italic = true })
+
+      local function text_format(symbol)
+        local res = {}
+
+        local round_start = { "", "SymbolUsageRounding" }
+        local round_end = { "", "SymbolUsageRounding" }
+
+        local stacked = symbol.stacked_count > 0 and ("+%s"):format(symbol.stacked_count) or ""
+
+        if symbol.references then
+          local usage = symbol.references <= 1 and "usage" or "usages"
+          local num = symbol.references == 0 and "no" or symbol.references
+          table.insert(res, round_start)
+          table.insert(res, { "󰌹 ", "SymbolUsageRef" })
+          table.insert(res, { ("%s %s"):format(num, usage), "SymbolUsageContent" })
+          table.insert(res, round_end)
+        end
+
+        if symbol.definition then
+          if #res > 0 then
+            table.insert(res, { " ", "NonText" })
+          end
+          table.insert(res, round_start)
+          table.insert(res, { "󰳽 ", "SymbolUsageDef" })
+          table.insert(res, { symbol.definition .. " defs", "SymbolUsageContent" })
+          table.insert(res, round_end)
+        end
+
+        if symbol.implementation then
+          if #res > 0 then
+            table.insert(res, { " ", "NonText" })
+          end
+          table.insert(res, round_start)
+          table.insert(res, { "󰡱 ", "SymbolUsageImpl" })
+          table.insert(res, { symbol.implementation .. " impls", "SymbolUsageContent" })
+          table.insert(res, round_end)
+        end
+
+        if stacked ~= "" then
+          if #res > 0 then
+            table.insert(res, { " ", "NonText" })
+          end
+          table.insert(res, round_start)
+          table.insert(res, { " ", "SymbolUsageImpl" })
+          table.insert(res, { stacked, "SymbolUsageContent" })
+          table.insert(res, round_end)
+        end
+
+        return res
+      end
+
       require("symbol-usage").setup({
-        vt_position = "end_of_line",
-        text_format = function(symbol)
-          local refs = symbol.references and (" 󰌹 " .. symbol.references) or ""
-          local def = symbol.definition and ("󰊕 " .. symbol.definition) or ""
-          local imp = symbol.implementation and ("󰡱 " .. symbol.implementation) or ""
-          return string.format("%s%s%s", refs, def, imp)
-        end,
+        text_format = text_format,
+        references = { enabled = true },
+        definition = { enabled = true },
+        implementation = { enabled = true },
       })
     end,
   },
