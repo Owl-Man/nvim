@@ -134,21 +134,29 @@ return {
   {
     "lukas-reineke/indent-blankline.nvim",
     event = { "BufReadPre", "BufNewFile" },
-    main = "ibl",
-    opts = {
-      indent = {
-        char = "│",
-        tab_char = "│",
-      },
-      scope = {
-        enabled = true,
-        show_start = true,
-        show_end = false,
-      },
-      exclude = {
-        filetypes = { "help", "dashboard", "neo-tree", "Trouble", "lazy", "mason" },
-      },
-    },
+    config = function()
+      local ibl = require("ibl")
+      ibl.setup({
+        indent = {
+          char = "│",
+          tab_char = "│",
+        },
+        scope = {
+          enabled = true,
+          show_start = true,
+          show_end = false,
+        },
+        exclude = {
+          filetypes = { "help", "dashboard", "neo-tree", "Trouble", "lazy", "mason" },
+        },
+      })
+
+      vim.api.nvim_create_autocmd("BufWritePost", {
+        callback = function(args)
+          ibl.refresh(args.buf)
+        end,
+      })
+    end,
   },
 
   {
@@ -210,9 +218,13 @@ return {
           SymbolKind.Field,
           SymbolKind.Property,
           SymbolKind.Event,
+          SymbolKind.Class,
+          SymbolKind.Struct,
+          SymbolKind.Interface,
+          SymbolKind.Enum,
         },
         references = { enabled = true },
-        definition = { enabled = true },
+        definition = { enabled = false },
         implementation = { enabled = true },
       })
     end,
