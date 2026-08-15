@@ -69,7 +69,9 @@ return {
           map("n", "<leader>e", vim.diagnostic.open_float, "Open diagnostic float")
           map("n", "[d", vim.diagnostic.goto_prev, "Prev diagnostic")
           map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
-          map("n", "<leader>cl", vim.lsp.codelens.run, "Run code lens")
+          map("n", "<leader>cl", function()
+            require("telescope.builtin").lsp_references({ include_declaration = false })
+          end, "Find all references (grep preview)")
           local function format()
             local conform_ok, conform = pcall(require, "conform")
             if not conform_ok then
