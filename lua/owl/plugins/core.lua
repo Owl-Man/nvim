@@ -140,6 +140,7 @@ return {
         indent = {
           char = "│",
           tab_char = "│",
+          smart_indent_cap = false,
         },
         scope = {
           enabled = true,
@@ -226,6 +227,12 @@ return {
         references = { enabled = true },
         definition = { enabled = false },
         implementation = { enabled = true },
+      })
+
+      vim.api.nvim_create_autocmd("FileChangedShellPost", {
+        callback = function()
+          pcall(require("symbol-usage").refresh)
+        end,
       })
     end,
   },
@@ -326,21 +333,54 @@ return {
   {
     "SmiteshP/nvim-navic",
     dependencies = "neovim/nvim-lspconfig",
-    opts = {
-      icons = {
-        Class = "∘ ", Method = "ƒ ", Property = "■ ",
-        Field = "□ ", Constructor = "⬡ ", Enum = "_enum ",
-        Interface = " intf ", Function = " func ", Variable = " var ",
-        Constant = " const ", String = " s ", Number = " n ",
-        Boolean = " b ", Array = " arr ", Object = " obj ",
-        Key = " k ", Null = " null ", EnumMember = " em ",
-        Struct = " st ", Event = " ev ", Operator = " op ",
-        TypeParameter = " tp ",
-      },
-      highlight = true,
-      separator = " › ",
-      depth_limit = 0,
-    },
+    config = function()
+      require("nvim-navic").setup({
+        icons = {
+          Class = "∘ ", Method = "ƒ ", Property = "■ ",
+          Field = "□ ", Constructor = "⬡ ", Enum = "_enum ",
+          Interface = " intf ", Function = " func ", Variable = " var ",
+          Constant = " const ", String = " s ", Number = " n ",
+          Boolean = " b ", Array = " arr ", Object = " obj ",
+          Key = " k ", Null = " null ", EnumMember = " em ",
+          Struct = " st ", Event = " ev ", Operator = " op ",
+          TypeParameter = " tp ",
+        },
+        highlight = true,
+        separator = " › ",
+        depth_limit = 0,
+      })
+
+      local links = {
+        NavicIconsFile = "Comment",
+        NavicIconsClass = "Type",
+        NavicIconsMethod = "Function",
+        NavicIconsProperty = "Property",
+        NavicIconsField = "Field",
+        NavicIconsConstructor = "Function",
+        NavicIconsEnum = "Type",
+        NavicIconsInterface = "Type",
+        NavicIconsFunction = "Function",
+        NavicIconsVariable = "Variable",
+        NavicIconsConstant = "Constant",
+        NavicIconsString = "String",
+        NavicIconsNumber = "Number",
+        NavicIconsBoolean = "Boolean",
+        NavicIconsArray = "Type",
+        NavicIconsObject = "Type",
+        NavicIconsKey = "Identifier",
+        NavicIconsNull = "Special",
+        NavicIconsEnumMember = "Constant",
+        NavicIconsStruct = "Type",
+        NavicIconsEvent = "Function",
+        NavicIconsOperator = "Operator",
+        NavicIconsTypeParameter = "Type",
+        NavicText = "Comment",
+        NavicSeparator = "Comment",
+      }
+      for name, target in pairs(links) do
+        vim.api.nvim_set_hl(0, name, { link = target, default = true })
+      end
+    end,
     init = function()
       vim.o.winbar = "%#NavicSeparator#%{&nu?'  ':'  '}%#NavicText#%f%{v:lua.require'nvim-navic'.is_available()?' › ':''}%#NavicIconsFile#%{v:lua.require'nvim-navic'.get_location()}"
     end,
