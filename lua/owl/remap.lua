@@ -1,5 +1,10 @@
 vim.g.mapleader = " "
-vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
+
+-- vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
+-- vim.keymap.set("n", "-", vim.cmd.Ex)
+
+vim.keymap.set("n", "<leader>pv", "<CMD>Oil<CR>")
+vim.keymap.set("n", "-", "<CMD>Oil<CR>")
 
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
@@ -35,8 +40,8 @@ vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
 vim.keymap.set("n", "<M-h>", "<cmd>silent !tmux-sessionizer -s 0 --vsplit<CR>")
 vim.keymap.set("n", "<M-H>", "<cmd>silent !tmux neww tmux-sessionizer -s 0<CR>")
 
-vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz")
-vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz")
+vim.keymap.set("n", "<M-j>", "<cmd>cnext<CR>zz")
+vim.keymap.set("n", "<M-k>", "<cmd>cprev<CR>zz")
 vim.keymap.set("n", "<leader>k", "<cmd>lnext<CR>zz")
 vim.keymap.set("n", "<leader>j", "<cmd>lprev<CR>zz")
 
@@ -85,6 +90,21 @@ end)
 
 vim.keymap.set("n", "<leader>gs", "<cmd>Git<CR>")
 vim.keymap.set("n", "<leader>gl", "<cmd>Git log --graph --oneline --decorate --all<CR>")
+vim.keymap.set("n", "<leader>gB", "<cmd>Git branch -a<CR>", { desc = "Git branch list (all)" })
+vim.keymap.set("n", "<leader>gm", function()
+  vim.ui.input({ prompt = "Merge branch: " }, function(branch)
+    if branch and branch ~= "" then
+      vim.cmd("Git merge " .. branch)
+    end
+  end)
+end, { desc = "Git merge" })
+vim.keymap.set("n", "<leader>gP", function()
+  vim.ui.input({ prompt = "Cherry-pick SHA: " }, function(sha)
+    if sha and sha ~= "" then
+      vim.cmd("Git cherry-pick " .. sha)
+    end
+  end)
+end, { desc = "Git cherry-pick" })
 vim.keymap.set("n", "<leader>u", "<cmd>UndotreeToggle<CR>")
 
 vim.api.nvim_create_autocmd("FileType", {
@@ -107,3 +127,13 @@ vim.api.nvim_create_autocmd("FileType", {
     })
   end,
 })
+
+
+vim.keymap.set("n", "<space>st", function()
+    vim.cmd.vnew()
+    vim.cmd.term()
+    vim.cmd.wincmd("J")
+    vim.api.nvim_win_set_height(0, 15)
+end)
+
+vim.keymap.set("t", "<C-t>", "<C-\\><C-N>")

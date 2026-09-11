@@ -7,7 +7,7 @@ return {
     "WhoIsSethDaniel/mason-tool-installer.nvim",
     dependencies = { "williamboman/mason.nvim" },
     opts = {
-      ensure_installed = { "roslyn-language-server", "netcoredbg" },
+      ensure_installed = { "roslyn-language-server", "netcoredbg", "clangd", "codelldb" },
       auto_update = false,
       run_on_start = true,
     },
@@ -47,48 +47,7 @@ return {
 
       vim.lsp.config("roslyn", {
         capabilities = capabilities,
-        on_attach = function(client, bufnr)
-          if client.server_capabilities.documentSymbolProvider then
-            require("nvim-navic").attach(client, bufnr)
-          end
-
-          local function map(mode, lhs, rhs, desc)
-            vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
-          end
-
-          map("n", "gd", vim.lsp.buf.definition, "Go to definition")
-          map("n", "gy", vim.lsp.buf.definition, "Definition (standard LSP, no decompile)")
-          map("n", "gD", vim.lsp.buf.type_definition, "Go to type definition")
-          map("n", "gr", vim.lsp.buf.references, "References")
-          map("n", "gi", vim.lsp.buf.implementation, "Implementation")
-
-          map("n", "K", vim.lsp.buf.hover, "Hover")
-          map("n", "<leader>rn", vim.lsp.buf.rename, "Rename")
-          map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-          map({ "n", "v" }, "<A-CR>", vim.lsp.buf.code_action, "Quick fix (Alt+Enter)")
-          map("n", "<leader>e", vim.diagnostic.open_float, "Open diagnostic float")
-          map("n", "[d", vim.diagnostic.goto_prev, "Prev diagnostic")
-          map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
-          map("n", "<leader>cl", function()
-            require("telescope.builtin").lsp_references({ include_declaration = false })
-          end, "Find all references (grep preview)")
-          local function format()
-            local conform_ok, conform = pcall(require, "conform")
-            if not conform_ok then
-              require("lazy").load({ plugins = { "conform.nvim" } })
-              conform_ok, conform = pcall(require, "conform")
-            end
-            if conform_ok then
-              conform.format({ async = true, lsp_fallback = true })
-            else
-              vim.lsp.buf.format({ async = true })
-            end
-          end
-          map("n", "<leader>f", format, "Format file (csharpier / LSP)")
-          map("v", "<leader>f", format, "Format selection (csharpier / LSP)")
-          map("n", "<leader>ws", vim.lsp.buf.workspace_symbol, "Workspace symbols")
-          map("n", "<leader>ds", vim.lsp.buf.document_symbol, "Document symbols")
-        end,
+        on_attach = require("owl.utils.lsp").on_attach,
         settings = {
           ["csharp|background_analysis"] = {
             dotnet_analyzer_diagnostics_scope = "openFiles",
@@ -101,8 +60,21 @@ return {
           ["csharp|code_lens"] = {
             dotnet_enable_references_code_lens = true,
           },
+          ["csharp|completion"] = {
+            dotnet_show_name_completion_suggestions = true,
+            dotnet_provide_regex_completions = true,
+            dotnet_show_completion_items_from_unimported_namespaces = true,
+            dotnet_trigger_completion_in_argument_lists = true,
+          },
       },
       })
+
+      vim.lsp.config("clangd", {
+        capabilities = capabilities,
+        on_attach = require("owl.utils.lsp").on_attach,
+        cmd = { "clangd", "--background-index", "--clang-tidy" },
+      })
+      vim.lsp.enable("clangd")
     end,
   },
   {
@@ -123,6 +95,7 @@ return {
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
       "onsails/lspkind-nvim",
+      "rafamadriz/friendly-snippets",
     },
     config = function()
       local cmp = require("cmp")
@@ -132,8 +105,8 @@ return {
       cmp.setup({
         snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
         window = {
-          completion = cmp.config.window.bordered(),
-          documentation = cmp.config.window.bordered(),
+          completion = cmp.config.window.bordered({ maxheight = 10 }),
+          documentation = cmp.config.window.bordered({ maxheight = 15 }),
         },
         formatting = {
           format = lspkind.cmp_format({
@@ -175,6 +148,8 @@ return {
           { name = "buffer", keyword_length = 3, max_item_count = 5 },
         }),
       })
+
+      require("luasnip.loaders.from_vscode").lazy_load()
     end,
   },
   {
@@ -195,7 +170,11 @@ return {
       end
 
       require("conform").setup({
-        formatters_by_ft = { cs = { "csharpier" } },
+        formatters_by_ft = {
+          cs = { "csharpier" },
+          c = { "clang_format" },
+          cpp = { "clang_format" },
+        },
         formatters = {
           csharpier = {
             command = csharpier_cmd,
@@ -236,6 +215,57 @@ return {
           return require("dap.utils").pick_process({ filter = "Unity" })
         end,
       })
+
+      local codelldb_path = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb"
+      dap.adapters.codelldb = {
+        type = "server",
+        port = "${port}",
+        executable = {
+          command = codelldb_path,
+          args = { "--port", "${port}" },
+        },
+      }
+
+      dap.configurations.c = {
+        {
+          name = "Launch (gcc build)",
+          type = "codelldb",
+          request = "launch",
+          program = function()
+            local file = vim.fn.expand("%:p")
+            local out = vim.fn.expand("%:p:r")
+            local cmd = "gcc -g " .. file .. " -o " .. out
+            vim.fn.system(cmd)
+            if vim.v.shell_error ~= 0 then
+              vim.notify("Build failed!", vim.log.levels.ERROR)
+              return ""
+            end
+            return out
+          end,
+          cwd = "${workspaceFolder}",
+          stopOnEntry = false,
+        },
+        {
+          name = "Launch (existing executable)",
+          type = "codelldb",
+          request = "launch",
+          program = function()
+            return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+          end,
+          cwd = "${workspaceFolder}",
+          stopOnEntry = false,
+        },
+        {
+          name = "Attach to process",
+          type = "codelldb",
+          request = "attach",
+          pid = function()
+            return require("dap.utils").pick_process()
+          end,
+          cwd = "${workspaceFolder}",
+        },
+      }
+      dap.configurations.cpp = dap.configurations.c
 
       dapui.setup()
       require("nvim-dap-virtual-text").setup({ commented = true })

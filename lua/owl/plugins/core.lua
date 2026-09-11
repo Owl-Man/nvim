@@ -53,7 +53,22 @@ return {
           vim.keymap.set("n", "<leader>4", function()
               harpoon:list():select(4)
           end)
+          vim.keymap.set("n", "<leader>5", function()
+              harpoon:list():select(5)
+          end)
       end,
+  },
+
+  {
+      'stevearc/oil.nvim',
+      ---@module 'oil'
+      ---@type oil.SetupOpts
+      opts = {},
+      -- Optional dependencies
+      dependencies = { { "nvim-mini/mini.icons", opts = {} } },
+      -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
+      -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+      lazy = false,
   },
 
   {
@@ -231,7 +246,17 @@ return {
 
       vim.api.nvim_create_autocmd("FileChangedShellPost", {
         callback = function()
-          pcall(require("symbol-usage").refresh)
+          local M = require("symbol-usage")
+          local state = require("symbol-usage.state")
+          local buf = vim.api.nvim_get_current_buf()
+          local workers = state and state.get_buf_workers(buf) or {}
+          if #workers == 0 then
+            pcall(M.refresh)
+            return
+          end
+          for _, w in ipairs(workers) do
+            pcall(w.run, w, true)
+          end
         end,
       })
     end,
@@ -245,7 +270,7 @@ return {
       local ok, configs = pcall(require, "nvim-treesitter.configs")
       if ok then
         configs.setup({
-          ensure_installed = { "c_sharp", "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline" },
+          ensure_installed = { "c_sharp", "c", "cpp", "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline" },
           sync_install = false,
           auto_install = true,
           highlight = { enable = true },
