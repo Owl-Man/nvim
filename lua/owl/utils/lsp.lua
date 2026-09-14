@@ -43,8 +43,33 @@ function M.on_attach(client, bufnr)
   end
   map("n", "<leader>f", format, "Format file")
   map("v", "<leader>f", format, "Format selection")
+
+  local function format_range(start_line, start_col, end_line, end_col)
+    vim.lsp.buf.format({
+      async = true,
+      range = {
+        start = { start_line, start_col },
+        ["end"] = { end_line, end_col },
+      },
+    })
+  end
+  map("n", "<leader>fl", function()
+    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    format_range(line, 0, line + 1, 0)
+  end, "Format current line (LSP)")
+  map("v", "<leader>fl", function()
+    local s = vim.fn.getpos("'<")
+    local e = vim.fn.getpos("'>")
+    format_range(s[2] - 1, s[3] - 1, e[2] - 1, math.max(e[3] - 1, 0))
+  end, "Format selection (LSP)")
   map("n", "<leader>ws", vim.lsp.buf.workspace_symbol, "Workspace symbols")
   map("n", "<leader>ds", vim.lsp.buf.document_symbol, "Document symbols")
+
+  map("n", "<leader>xE", function()
+    local d = vim.diagnostic.get(0, { severity = { min = vim.log.levels.ERROR } })
+    vim.fn.setqflist({}, "r", { title = "Errors " .. vim.fn.expand("%:t"), items = vim.diagnostic.toqflist(d) })
+    vim.cmd("copen")
+  end, "Errors of current file in quickfix")
 end
 
 return M

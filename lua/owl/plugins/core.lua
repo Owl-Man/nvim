@@ -59,11 +59,11 @@ return {
       end,
   },
 
-  {
-      'stevearc/oil.nvim',
-      ---@module 'oil'
-      ---@type oil.SetupOpts
-      opts = {},
+   {
+       'stevearc/oil.nvim',
+       ---@module 'oil'
+       ---@type oil.SetupOpts
+       opts = { show_hidden = true, watch_for_changes = true },
       -- Optional dependencies
       dependencies = { { "nvim-mini/mini.icons", opts = {} } },
       -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
@@ -420,6 +420,25 @@ return {
     },
     config = function(_, opts)
       require("project_nvim").setup(opts)
+
+      local project = require("project_nvim.project")
+      project.find_lsp_root = function()
+        local buf_ft = vim.api.nvim_buf_get_option(0, "filetype")
+        local clients = vim.lsp.get_clients and vim.lsp.get_clients({ bufnr = 0 }) or vim.lsp.buf_get_clients()
+        if next(clients) == nil then
+          return nil
+        end
+        for _, client in pairs(clients) do
+          local filetypes = client.config.filetypes
+          if filetypes and vim.tbl_contains(filetypes, buf_ft) then
+            if not vim.tbl_contains(require("project_nvim.config").options.ignore_lsp, client.name) then
+              return client.config.root_dir, client.name
+            end
+          end
+        end
+        return nil
+      end
+
       vim.api.nvim_create_user_command("CdRoot", function()
         vim.cmd("cd " .. (require("project_nvim.project").get_root(vim.fn.expand("%:p")) or "."))
       end, {})

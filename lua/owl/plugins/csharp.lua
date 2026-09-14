@@ -98,9 +98,10 @@ return {
       "rafamadriz/friendly-snippets",
     },
     config = function()
-      local cmp = require("cmp")
-      local luasnip = require("luasnip")
-      local lspkind = require("lspkind")
+local cmp = require("cmp")
+  local luasnip = require("luasnip")
+  local lspkind = require("lspkind")
+
 
       cmp.setup({
         snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
@@ -141,7 +142,6 @@ return {
         }),
         sources = cmp.config.sources({
           { name = "nvim_lsp", priority = 1000 },
-          { name = "nvim_lsp_signature_help" },
           { name = "luasnip", priority = 750 },
           { name = "path" },
         }, {
@@ -214,6 +214,29 @@ return {
         processId = function()
           return require("dap.utils").pick_process({ filter = "Unity" })
         end,
+      })
+
+      table.insert(dap.configurations.cs, {
+        type = "coreclr",
+        name = "Launch ASP.NET",
+        request = "launch",
+        program = function()
+          local root = vim.fn.getcwd()
+          local proj = vim.fn.glob(root .. "/*.csproj", false, true)[1]
+          if vim.fn.filereadable(proj or "") ~= 1 then return "" end
+          vim.fn.system("dotnet build " .. vim.fn.shellescape(proj))
+          local dll = vim.fn.glob(vim.fn.fnamemodify(proj, ":h") .. "/bin/Debug/**/" .. vim.fn.fnamemodify(proj, ":t:r") .. ".dll", false, true)
+          return #dll > 0 and dll[#dll] or ""
+        end,
+        cwd = vim.fn.getcwd(),
+        justMyCode = false,
+      })
+
+      table.insert(dap.configurations.cs, {
+        type = "coreclr",
+        name = "Attach to .NET process",
+        request = "attach",
+        processId = function() return require("dap.utils").pick_process() end,
       })
 
       local codelldb_path = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb"
