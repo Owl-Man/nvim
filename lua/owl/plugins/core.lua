@@ -443,5 +443,27 @@ return {
         vim.cmd("cd " .. (require("project_nvim.project").get_root(vim.fn.expand("%:p")) or "."))
       end, {})
     end,
-  },
+},
+{
+    "sphamba/smear-cursor.nvim",
+    opts = {
+        smear_between_buffers = true,
+        smear_between_neighbor_lines = true,
+        legacy_computing_symbols_support = false,
+        trailing_stiffness = 0.8,
+        distance_stop_animating = 0.8,
+        stiffness = 0.9,
+        time_interval = 12,
+        filetypes_disabled = {
+            "TelescopePrompt",
+            "TelescopeResults",
+            "DressingInput",
+            "oil",
+            "lazy",
+            "mason",
+            "noice",
+            "notify",
+        },
+    },
+}
 }

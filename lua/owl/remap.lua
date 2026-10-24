@@ -36,7 +36,9 @@ vim.keymap.set({ "n", "v" }, "<leader>d", "\"_d")
 vim.keymap.set("i", "<C-c>", "<Esc>")
 
 vim.keymap.set("n", "Q", "<nop>")
-vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
+vim.keymap.set("n", "<C-f>", function()
+  require("telescope.builtin").find_files({ default_text = vim.fn.expand("<cword>") })
+end)
 vim.keymap.set("n", "<M-h>", "<cmd>silent !tmux-sessionizer -s 0 --vsplit<CR>")
 vim.keymap.set("n", "<M-H>", "<cmd>silent !tmux neww tmux-sessionizer -s 0<CR>")
 
@@ -87,10 +89,14 @@ vim.keymap.set("n", "<leader>ps", function()
   })
 end)
 
+vim.keymap.set("n", "<leader>psw", function()
+  require("telescope.builtin").grep_string({ search = vim.fn.expand("<cword>") })
+end)
+
 
 vim.keymap.set("n", "<leader>gs", "<cmd>Git<CR>")
 vim.keymap.set("n", "<leader>gl", "<cmd>Git log --graph --oneline --decorate --all<CR>")
-vim.keymap.set("n", "<leader>gB", "<cmd>Git branch -a<CR>", { desc = "Git branch list (all)" })
+vim.keymap.set("n", "<leader>gb", "<cmd>Git branch -a<CR>", { desc = "Git branch list (all)" })
 vim.keymap.set("n", "<leader>gm", function()
   vim.ui.input({ prompt = "Merge branch: " }, function(branch)
     if branch and branch ~= "" then

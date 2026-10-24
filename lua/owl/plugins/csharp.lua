@@ -80,10 +80,37 @@ return {
   {
     "seblyng/roslyn.nvim",
     opts = {
-      filewatching = "roslyn",
+      filewatching = "off",
       lock_target = true,
+      choose_target = function(targets)
+          for _, target in ipairs(targets) do
+              if target:match("%.slnx$") then
+                  return target
+              end
+          end
+          return targets[1]
+      end,
     },
   },
+  {
+      "khoido2003/roslyn-filewatch.nvim",
+      opts = {
+          client_names = { "roslyn" },
+          preset = "unity",          
+          enable_autorestore = true,
+      },
+  },
+  {
+      "apyra/nvim-unity-sync",
+      ft = "cs",
+      config = function()
+          require("unity.plugin").setup({
+              -- unity_path = "...", 
+              unity_cs_template = true, 
+          })
+      end,
+  },
+
   {
     "hrsh7th/nvim-cmp",
     event = "InsertEnter",
