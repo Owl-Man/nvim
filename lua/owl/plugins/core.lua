@@ -139,6 +139,34 @@ return {
         map("n", "<leader>hR", gs.reset_buffer, "Reset buffer")
         map("n", "<leader>hp", gs.preview_hunk, "Preview hunk")
         map("n", "<leader>hb", function() gs.blame_line({ full = true }) end, "Blame line")
+        map("n", "<leader>hc", function()
+          local file = vim.api.nvim_buf_get_name(0)
+          if file == "" then
+            return
+          end
+          local lnum = vim.api.nvim_win_get_cursor(0)[1]
+          local res = vim.system({
+            "git",
+            "-C",
+            vim.fn.fnamemodify(file, ":h"),
+            "blame",
+            "-L",
+            ("%d,%d"):format(lnum, lnum),
+            "--porcelain",
+            "--",
+            file,
+          }, { text = true }):wait()
+          local sha = res.code == 0 and (res.stdout or ""):match("^(%x+)") or nil
+          if not sha then
+            vim.notify("Не удалось определить коммит для строки", vim.log.levels.WARN)
+            return
+          end
+          if sha:match("^0+$") then
+            vim.notify("Строка ещё не закоммичена", vim.log.levels.INFO)
+            return
+          end
+          vim.cmd("Gitsigns show " .. sha .. " --open=vsplit")
+        end, "Show commit for line (vsplit)")
         map("n", "<leader>hd", gs.diffthis, "Diff this")
         map("n", "<leader>hD", function() gs.diffthis("~") end, "Diff this (~)")
         map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", "Select hunk (inner)")
