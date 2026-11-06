@@ -94,7 +94,38 @@ vim.keymap.set("n", "<leader>psw", function()
 end)
 
 
-vim.keymap.set("n", "<leader>gs", "<cmd>Git<CR>")
+-- Fugitive не умеет разбирать oil:// и для oil-буфера берёт репозиторий от cwd.
+-- На время :Git подставляем git_dir из директории oil, затем возвращаем как было.
+vim.keymap.set("n", "<leader>gs", function()
+  if vim.bo.filetype ~= "oil" then
+    vim.cmd("Git")
+    return
+  end
+
+  local ok_oil, oil = pcall(require, "oil")
+  local dir = ok_oil and oil.get_current_dir() or nil
+  local git_dir
+  if dir and dir ~= "" then
+    local res = vim.system({ "git", "-C", dir, "rev-parse", "--absolute-git-dir" }, { text = true }):wait()
+    if res.code == 0 and res.stdout then
+      git_dir = vim.trim(res.stdout)
+    end
+  end
+
+  if not git_dir or git_dir == "" then
+    vim.cmd("Git")
+    return
+  end
+
+  local buf = vim.api.nvim_get_current_buf()
+  local previous = vim.b[buf].git_dir
+  vim.b[buf].git_dir = git_dir
+  local ok, err = pcall(vim.cmd, "Git")
+  vim.b[buf].git_dir = previous
+  if not ok then
+    error(err)
+  end
+end)
 vim.keymap.set("n", "<leader>gl", "<cmd>Git log --graph --oneline --decorate --all<CR>")
 vim.keymap.set("n", "<leader>gb", "<cmd>Git branch -a<CR>", { desc = "Git branch list (all)" })
 vim.keymap.set("n", "<leader>gm", function()
@@ -135,11 +166,69 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 
+local function current_dir()
+  local dir
+  if vim.bo.filetype == "oil" then
+    local ok, oil_dir = pcall(function()
+      return require("oil").get_current_dir()
+    end)
+    if ok then
+      dir = oil_dir
+    end
+  end
+
+  if not dir or dir == "" or vim.fn.isdirectory(dir) == 0 then
+    dir = vim.fn.expand("%:p:h")
+  end
+  if dir == "" or vim.fn.isdirectory(dir) == 0 then
+    dir = vim.fn.getcwd()
+  end
+  return dir
+end
+
 vim.keymap.set("n", "<space>st", function()
+    local dir = current_dir()
     vim.cmd.vnew()
-    vim.cmd.term()
     vim.cmd.wincmd("J")
+    vim.fn.termopen({ vim.o.shell }, { cwd = dir })
     vim.api.nvim_win_set_height(0, 15)
 end)
+
+local function open_yazi()
+  local dir = current_dir()
+
+  if vim.fn.executable("yazi") ~= 1 then
+    vim.notify("yazi не найден в PATH", vim.log.levels.ERROR)
+    return
+  end
+
+  if vim.env.TMUX and vim.env.TMUX ~= "" and vim.fn.executable("tmux") == 1 then
+    vim.system({
+      "tmux", "new-pane",
+      "-x", "90%",
+      "-y", "90%",
+      "-X", "0",
+      "-Y", "0",
+      "-c", dir,
+      "yazi",
+      ";", "move-pane", "-P", "centre",
+    }, { text = true }, function(res)
+      if res.code ~= 0 then
+        vim.schedule(function()
+          vim.notify("tmux: не удалось открыть панель с yazi" .. (res.stderr and (": " .. res.stderr) or ""), vim.log.levels.ERROR)
+        end)
+      end
+    end)
+    return
+  end
+
+  vim.cmd.vnew()
+  vim.cmd.wincmd("J")
+  vim.fn.termopen({ "yazi", dir }, { cwd = dir })
+  vim.cmd("wincmd =")
+  vim.cmd("startinsert")
+end
+
+vim.keymap.set("n", "<leader>sf", open_yazi, { desc = "Yazi в директории текущего файла" })
 
 vim.keymap.set("t", "<C-t>", "<C-\\><C-N>")

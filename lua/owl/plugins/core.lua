@@ -63,7 +63,24 @@ return {
        'stevearc/oil.nvim',
        ---@module 'oil'
        ---@type oil.SetupOpts
-       opts = { show_hidden = true, watch_for_changes = true },
+       opts = {
+          show_hidden = true,
+          watch_for_changes = true,
+          keymaps = {
+              gd = {
+                  callback = function()
+                      require("oil").open(vim.fn.expand("~/Downloads"))
+                  end,
+                  desc = "Go to ~/Downloads",
+              },
+              gc = {
+                  callback = function()
+                      require("oil").open(vim.fn.expand("~/.config"))
+                  end,
+                  desc = "Go to ~/.config",
+              },
+          },
+      },
       -- Optional dependencies
       dependencies = { { "nvim-mini/mini.icons", opts = {} } },
       -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
