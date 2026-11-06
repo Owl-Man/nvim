@@ -93,9 +93,8 @@ vim.keymap.set("n", "<leader>psw", function()
   require("telescope.builtin").grep_string({ search = vim.fn.expand("<cword>") })
 end)
 
-
--- Fugitive не умеет разбирать oil:// и для oil-буфера берёт репозиторий от cwd.
--- На время :Git подставляем git_dir из директории oil, затем возвращаем как было.
+-- Fugitive cannot parse `oil://` URIs, so for an `oil` buffer, it defaults to using the repository from the current working directory (cwd).
+-- When running `:Git`, we temporarily substitute the `git_dir` with the one from the `oil` directory, then restore the original setting.
 vim.keymap.set("n", "<leader>gs", function()
   if vim.bo.filetype ~= "oil" then
     vim.cmd("Git")
